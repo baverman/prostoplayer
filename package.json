@@ -1,0 +1,19 @@
+{
+  "name": "player",
+  "version": "1.0.0",
+  "description": "Zvooq player",
+  "main": "index.js",
+  "dependencies": {
+    "cordova": "^5.2.0",
+    "jquery": "^2.1.4",
+    "livescript-loader": "^0.1.5",
+    "react": "^0.13.3",
+    "webpack": "^1.12.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}
