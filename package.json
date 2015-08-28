@@ -13,6 +13,7 @@
     "prelude-ls": "^1.1.2",
     "react": "^0.13.3",
     "react-tap-event-plugin": "^0.1.7",
+    "rlite-router": "^1.1.0",
     "style-loader": "^0.12.3",
     "stylus-loader": "^1.2.1",
     "webpack": "^1.12.0"

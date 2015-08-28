@@ -5,8 +5,8 @@ var app = express();
 
 app.use('/www', express.static('www'));
 
-app.use('/', function(req, res) {  
-  var url = 'http://zvooq.ru' + req.url;
+app.use('/api', function(req, res) {  
+  var url = 'http://zvooq.ru/api' + req.url;
   req.pipe(request(url)).pipe(res);
 });
 
