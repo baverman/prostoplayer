@@ -5,11 +5,16 @@
   "main": "index.js",
   "dependencies": {
     "cordova": "^5.2.0",
+    "css-loader": "^0.16.0",
     "jquery": "^2.1.4",
     "livescript-loader": "^0.1.5",
     "lodash": "^3.10.1",
+    "material-ui": "^0.11.0",
     "prelude-ls": "^1.1.2",
     "react": "^0.13.3",
+    "react-tap-event-plugin": "^0.1.7",
+    "style-loader": "^0.12.3",
+    "stylus-loader": "^1.2.1",
     "webpack": "^1.12.0"
   },
   "devDependencies": {

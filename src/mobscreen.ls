@@ -1,25 +1,12 @@
 React = require 'react/addons'
 {unique, map} = require 'prelude-ls'
 {random, isEmpty} = require 'lodash'
+{RefreshIndicator} = require 'material-ui'
 
 {fetch} = require './zvooq.ls'
+require './mobscreen.styl'
 
 tabs = 1: \small_wtl
-
-styles =
-    cell:
-        width: '400px'
-        height: '200px'
-
-    release:
-        display: 'inline-block'
-        width: '50%'
-        height: '100%'
-
-    playlist:
-        width: '100%'
-        height: '100%'
-
 
 fetch-item = (cell, lists) ->
     ilist = lists[cell.item]
@@ -82,7 +69,7 @@ Release = React.create-class do
         style =
             background-image: "url('#img_url')"
             background-size: \cover
-        $div style: style <<< styles.release
+        $a class-name: \release, style: style, href: "#/release/#{@props.release.id}"
 
 
 Playlist = React.create-class do
@@ -90,7 +77,7 @@ Playlist = React.create-class do
         style =
             background-image: "url('http://zvooq.ru#{@props.playlist.image_url}')"
             background-size: \cover
-        $div style: style <<< styles.playlist
+        $a class-name: \playlist, style: style, href: "#/playlist/#{@props.playlist.id}"
 
 
 export Mobscreen = React.create-class do
@@ -103,11 +90,18 @@ export Mobscreen = React.create-class do
 
     render: ->
         if not @state.data
-            return $div null, 'Loading...'
+            return $ RefreshIndicator, do
+                size: 40
+                status: "loading"
+                style:
+                    left: '50%'
+                    margin-left: -20px
+                    top: 20px
 
-        $div null, for cell in @state.data
-            $div style: styles.cell, for r in cell
-                if r.item_type == \release
-                    $ Release, release: r.object
-                else if r.item_type == \playlist
-                    $ Playlist, playlist: r.object
+        $div class-name: 'mobscreen scrollable', for cell in @state.data
+            $div class-name: \aspect-2x1,
+                $div class-name: \with-aspect, for r in cell
+                    if r.item_type == \release
+                        $ Release, release: r.object
+                    else if r.item_type == \playlist
+                        $ Playlist, playlist: r.object
