@@ -21,11 +21,13 @@
   "devDependencies": {
     "express": "^4.13.3",
     "livescript": "^1.4.0",
-    "request": "^2.61.0"
+    "request": "^2.61.0",
+    "webpack-dev-server": "1.10.1",
+    "react-hot-loader": "^1.2.8"
   },
   "scripts": {
     "watch": "webpack --progress --colors --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "hot-reload": "HOT_RELOAD=1 webpack-dev-server --port 3001 --hot --inline --progress --colors"
   },
   "author": "",
   "license": "MIT"
