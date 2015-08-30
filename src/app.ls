@@ -7,8 +7,8 @@ for key, value of React.DOM
 (require 'react-tap-event-plugin')!
 
 {split-at} = require 'prelude-ls'
+cn = require 'classnames'
 mui = require 'material-ui'
-route = (require 'rlite-router')!
 ThemeManager = new mui.Styles.ThemeManager()
 
 require './app.styl'
@@ -19,55 +19,65 @@ window._CORS = true
 
 Page = React.create-class do
     render: ->
-        top-page = if @props.active then 'top-page' else 'page'
-        $div class-name: top-page, @props.children
+        class-name = cn do
+            'with-app-bar': true
+            'top-page': @props.active
+            'page': !@props.active
+        $div class-name: class-name, @props.children
+
+
+Release = React.create-class do
+    render: ->
+        $div null, \Boo
 
 
 App = $$ React.create-class do
     child-context-types:
         mui-theme: React.PropTypes.object
+        app: React.PropTypes.object
 
     get-child-context: ->
-        mui-theme: ThemeManager.get-current-theme!
+        self = @
+        do
+            mui-theme: ThemeManager.get-current-theme!
+            app: self
 
     get-initial-state: ->
-        pages: []
+        views: @props.views
 
     add: ->
-        @state.pages.push(it)
-        @set-state pages: @state.pages
+        @state.views.push(it)
+        window.location.hash = @state.views |> JSON.stringify |> encodeURI
+        @set-state views: @state.views
 
     render: ->
-        [hpages, apages] = split-at @state.pages.length - 1, @state.pages
+        [hpages, apages] = split-at @state.views.length - 1, @state.views
 
         pages = for p in hpages
-            $ Page, active: false, p!
+            $ Page, active: false, views[p.view] p.props
 
+        apage = null
+        title = null
         if apages.length
-            pages.push $ Page, active: true, apages[0]!
+            apage = views[apages[0].view] apages[0].props
+            title = apages[0].title
+            pages.push $ Page, active: true, apage
 
+        pages.unshift $ mui.AppBar, title: (title or \Zplayer)
         $div class-name: 'page-container', pages
 
 
-app = React.render App!, document.get-element-by-id 'app-window'
-
-
-route.add '', ->
-    app.add -> $ Mobscreen, tab: 1
-
-
-route.add 'release/:id', ->
-    app.add -> $div null, 'Release #{it.params.id}'
-
-
-route.add 'playlist/:id', ->
-    app.add -> $div null, 'Playlist #{it.params.id}'
+views = do
+    mobscreen: (props) -> $ Mobscreen, props
+    release: (props) -> $ Release, props
 
 
 process-hash = ->
-    hash = location.hash or '#'
-    route.run hash.slice 1
+    views = if location.hash
+            then location.hash |> (.slice 1) |> decodeURI |> JSON.parse
+            else [{view: 'mobscreen', props: tab: 1}]
+    React.render (App views:views), document.get-element-by-id 'app-window'
 
-
-window.addEventListener 'hashchange', process-hash
 process-hash!
+
+# window.addEventListener 'hashchange', process-hash

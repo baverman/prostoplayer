@@ -63,21 +63,46 @@ get-mobscreen = (tab, cb) ->
     cb(cells)
 
 
+gradient = 'linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7))'
+
+
 Release = React.create-class do
+    context-types:
+        app: React.PropTypes.object
+
     render: ->
         img_url = @props.release.image.src.replace('{size}', '300x300')
-        style =
-            background-image: "url('#img_url')"
-            background-size: \cover
-        $a class-name: \release, style: style, href: "#/release/#{@props.release.id}"
+        $div do
+            class-name: \release
+            style:
+                background-image: "#gradient, url('#img_url')"
+                background-size: \cover
+            onClick: ~> @context.app.add do
+                view: \release,
+                id: @props.release.id,
+                title: \Release
+            $div class-name: \bottom,
+                @props.release.title
+                $br!
+                @props.release.credits
 
 
 Playlist = React.create-class do
+    context-types:
+        app: React.PropTypes.object
+
     render: ->
-        style =
-            background-image: "url('http://zvooq.ru#{@props.playlist.image_url}')"
-            background-size: \cover
-        $a class-name: \playlist, style: style, href: "#/playlist/#{@props.playlist.id}"
+        $a do
+            class-name: \playlist
+            style:
+                background-image: "#gradient, url('http://zvooq.ru#{@props.playlist.image_url}')"
+                background-size: \cover
+            onClick: ~> @context.app.add do
+                view: \playlist,
+                id: @props.playlist.id
+                title: \Playlist
+            $div class-name: \bottom,
+                @props.playlist.title
 
 
 export Mobscreen = React.create-class do
@@ -89,19 +114,20 @@ export Mobscreen = React.create-class do
         @set-state data: data
 
     render: ->
-        if not @state.data
-            return $ RefreshIndicator, do
-                size: 40
-                status: "loading"
-                style:
-                    left: '50%'
-                    margin-left: -20px
-                    top: 20px
-
-        $div class-name: 'mobscreen scrollable', for cell in @state.data
-            $div class-name: \aspect-2x1,
-                $div class-name: \with-aspect, for r in cell
-                    if r.item_type == \release
-                        $ Release, release: r.object
-                    else if r.item_type == \playlist
-                        $ Playlist, playlist: r.object
+        $div class-name: 'mobscreen scrollable',
+            if not @state.data
+                $ RefreshIndicator, do
+                    size: 40
+                    status: 'loading'
+                    style:
+                        left: '50%'
+                        margin-left: -20px
+                        top: 20px
+            else
+                for cell in @state.data
+                    $div class-name: \aspect-2x1,
+                        $div class-name: \with-aspect, for r in cell
+                            if r.item_type == \release
+                                $ Release, release: r.object
+                            else if r.item_type == \playlist
+                                $ Playlist, playlist: r.object

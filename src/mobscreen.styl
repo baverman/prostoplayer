@@ -1,18 +1,33 @@
 cell-border = 1px solid #eee
 
 .mobscreen
+    position relative
+
     .release
         width 50%
         height 100%
 
     .release:first-child
         border-right cell-border
+        float left
+
+    .release:nth-child(2)
+        margin-left 50%
 
     .playlist
         width 100%
         height 100%
 
     .release, .playlist
-        display inline-block
+        display block
         box-sizing: border-box
         border-bottom cell-border
+        color white
+        font-size 4vw
+        position relative
+        background linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1))
+
+        .bottom
+            position absolute
+            bottom 1em
+            left 0.7em
