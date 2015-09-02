@@ -32,6 +32,8 @@ Release = React.create-class do
 
 
 App = $$ React.create-class do
+    mixins: [React.addons.PureRenderMixin]
+
     child-context-types:
         mui-theme: React.PropTypes.object
         app: React.PropTypes.object
@@ -43,41 +45,95 @@ App = $$ React.create-class do
             app: self
 
     get-initial-state: ->
-        views: @props.views
+        data: @props.data
 
-    add: ->
-        @state.views.push(it)
-        window.location.hash = @state.views |> JSON.stringify |> encodeURI
-        @set-state views: @state.views
+    add: (view, props) ->
+        pages = @state.data.pages.concat [[view, props]]
+        window.location.hash = pages |> JSON.stringify |> encodeURI
+
+    make-page: (view, props, is-active) ->
+        v = views[view]
+        key = v.id props
+        $ Page, key: key, active: is-active, $ v.component, do
+            pkey: key
+            mutator: views-mutator
+            data: @state.data.views[key]
 
     render: ->
-        [hpages, apages] = split-at @state.views.length - 1, @state.views
+        [hpages, apages] = split-at @state.data.pages.length - 1, @state.data.pages
 
-        pages = for p in hpages
-            $ Page, active: false, views[p.view] p.props
+        pages = for [view, props] in hpages
+            @make-page view, props, false
 
         apage = null
         title = null
         if apages.length
-            apage = views[apages[0].view] apages[0].props
-            title = apages[0].title
-            pages.push $ Page, active: true, apage
+            [view, props] = apages[0]
+            v = views[view]
+            title = v.title props
+            pages.push @make-page view, props, true
 
         pages.unshift $ mui.AppBar, title: (title or \Zplayer)
         $div class-name: 'page-container', pages
 
 
 views = do
-    mobscreen: (props) -> $ Mobscreen, props
-    release: (props) -> $ Release, props
+    mobscreen:
+        component: Mobscreen
+        id: -> \mobscreen
+        title: -> \Zplayer
+    release:
+        component: Release
+        id: (props) -> "release-#{props.id}"
+        title: -> \Release
+    playlist:
+        component: Release
+        id: (props) -> "playlist-#{props.id}"
+        title: -> \Playlist
 
 
-process-hash = ->
-    views = if location.hash
-            then location.hash |> (.slice 1) |> decodeURI |> JSON.parse
-            else [{view: 'mobscreen', props: tab: 1}]
-    React.render (App views:views), document.get-element-by-id 'app-window'
+app-data = do
+    version: 1
+    views:
+        mobscreen:
+            tabs: {}
+    pages: []
 
-process-hash!
 
-# window.addEventListener 'hashchange', process-hash
+app-data-mutator = ->
+    console.log 'Data', it
+    # console.trace!
+    app-data := it
+    localStorage['app-data'] = JSON.stringify app-data
+    app.set-state data:it
+
+
+pages-mutator = ->
+    app-data-mutator React.addons.update app-data, pages: $set: it
+
+
+views-mutator = (key, value) ->
+    app-data-mutator React.addons.update app-data, views: (key): $set: value
+
+
+get-current-pages = ->
+    if location.hash
+    then location.hash |> (.slice 1) |> decodeURI |> JSON.parse
+    else [['mobscreen', null]]
+
+
+stored-data = localStorage['app-data']
+if stored-data
+    stored-data = JSON.parse stored-data
+    if stored-data.version == app-data.version
+        app-data = stored-data
+        if location.hash != '#'
+            app-data.pages = get-current-pages!
+else
+    app-data.pages = get-current-pages!
+
+app = React.render (App data:app-data), document.get-element-by-id 'app-window'
+
+window.addEventListener 'hashchange', ->
+    # console.log 'Pages', get-current-pages()
+    pages-mutator get-current-pages!

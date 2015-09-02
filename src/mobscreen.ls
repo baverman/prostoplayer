@@ -78,9 +78,8 @@ Release = React.create-class do
                 background-image: "#gradient, url('#img_url')"
                 background-size: \cover
             onClick: ~> @context.app.add do
-                view: \release,
+                \release
                 id: @props.release.id,
-                title: \Release
             $div class-name: \bottom,
                 @props.release.title
                 $br!
@@ -98,24 +97,20 @@ Playlist = React.create-class do
                 background-image: "#gradient, url('http://zvooq.ru#{@props.playlist.image_url}')"
                 background-size: \cover
             onClick: ~> @context.app.add do
-                view: \playlist,
+                \playlist
                 id: @props.playlist.id
-                title: \Playlist
             $div class-name: \bottom,
                 @props.playlist.title
 
 
 export Mobscreen = React.create-class do
-    get-initial-state: ->
-        data: null
-
-    component-will-mount: ->
-        data <~ get-mobscreen @props.tab
-        @set-state data: data
-
     render: ->
+        if not @props.data.tabs.1
+            data <~ get-mobscreen 1
+            @props.mutator @props.pkey, tabs: 1: data
+
         $div class-name: 'mobscreen scrollable',
-            if not @state.data
+            if not @props.data.tabs.1
                 $ RefreshIndicator, do
                     size: 40
                     status: 'loading'
@@ -124,7 +119,7 @@ export Mobscreen = React.create-class do
                         margin-left: -20px
                         top: 20px
             else
-                for cell in @state.data
+                for cell in @props.data.tabs.1
                     $div class-name: \aspect-2x1,
                         $div class-name: \with-aspect, for r in cell
                             if r.item_type == \release
