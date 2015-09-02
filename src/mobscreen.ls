@@ -2,6 +2,7 @@ React = require 'react/addons'
 {unique, map} = require 'prelude-ls'
 {random, isEmpty} = require 'lodash'
 {RefreshIndicator} = require 'material-ui'
+Swipeable = require 'react-swipeable'
 
 {fetch} = require './zvooq.ls'
 require './mobscreen.styl'
@@ -104,21 +105,56 @@ Playlist = React.create-class do
 
 
 export Mobscreen = React.create-class do
+    mixins: [React.addons.PureRenderMixin]
+
+    get-initial-state: ->
+        fetching-data: false
+        pull: false
+
+    pull-to-refresh: (e, delta) !->
+        if React.findDOMNode(@refs.scroll).scrollTop <= 0
+            status = React.findDOMNode(@refs.status)
+            if status
+                status.style.transform = "translate3d(0, #{delta}px, 0)"
+            else
+                @set-state pull: true
+
+            return true
+
+    pull-to-refresh-done: (e, delta) ->
+        if React.findDOMNode(@refs.scroll).scrollTop > 0
+            return
+
+        status = React.findDOMNode(@refs.status)
+        if status
+            status.style.transform = null;
+
+        if delta < -100
+            @set-state fetching-data: true
+            data <~ get-mobscreen 1
+            @state.fetching-data = false
+            @state.pull = false
+            @props.mutator @props.pkey, tabs: 1: data
+
     render: ->
         if not @props.data.tabs.1
             data <~ get-mobscreen 1
             @props.mutator @props.pkey, tabs: 1: data
 
-        $div class-name: 'mobscreen scrollable',
-            if not @props.data.tabs.1
-                $ RefreshIndicator, do
-                    size: 40
-                    status: 'loading'
-                    style:
-                        left: '50%'
-                        margin-left: -20px
-                        top: 20px
-            else
+        $ Swipeable,
+            class-name: \full
+            on-swiping-down: @pull-to-refresh
+            on-swiped-down: @pull-to-refresh-done
+            $div class-name: 'mobscreen scrollable', ref: \scroll,
+                if @state.fetching-data or @state.pull or !@props.data.tabs.1
+                    $ RefreshIndicator, do
+                        ref: 'status'
+                        size: 40
+                        status: 'loading'
+                        style:
+                            left: '50%'
+                            margin-left: -20px
+                            top: if !@props.data.tabs.1 or @state.fetching-data then 20px else -45
                 for cell in @props.data.tabs.1
                     $div class-name: \aspect-2x1,
                         $div class-name: \with-aspect, for r in cell

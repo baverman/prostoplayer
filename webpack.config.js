@@ -39,4 +39,5 @@ module.exports = {
 
 if (isProd) {
     module.exports.plugins.unshift(new webpack.optimize.UglifyJsPlugin({minimize: true}));
+    module.exports.devtool = '#source-map'
 }
