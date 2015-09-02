@@ -115,9 +115,27 @@ export Mobscreen = React.create-class do
         if React.findDOMNode(@refs.scroll).scrollTop <= 0
             status = React.findDOMNode(@refs.status)
             if status
-                status.style.transform = "translate3d(0, #{delta}px, 0)"
+                @state.pdelta = @state.top
+                @state.frame = 1
+                @state.delta = delta
+                if not @state.animation
+                    animate = ~>
+                        top = @state.pdelta + Math.round((@state.delta - @state.pdelta) * @state.frame / 15)
+                        if top > @state.delta
+                            top = @state.delta
+                        if top != @state.top
+                            @state.top = top
+                            status.style.transform = "translate3d(0, #{top}px, 0)"
+                        @state.frame++
+                        if @state.top == @state.delta or @state.fetching-data
+                            @state.animation = null
+                            status.style.transform = "translate3d(0, 65px, 0)"
+                        else
+                            requestAnimationFrame animate
+
+                    @state.animation = requestAnimationFrame(animate)
             else
-                @set-state pull: true
+                @set-state pull: true, pdelta: delta, top: delta, frame: 1
 
             return true
 
@@ -125,11 +143,15 @@ export Mobscreen = React.create-class do
         if React.findDOMNode(@refs.scroll).scrollTop > 0
             return
 
+        if @state.animation
+            cancelAnimationFrame(@state.animation)
+            @state.animation = null
+
         status = React.findDOMNode(@refs.status)
         if status
-            status.style.transform = null;
+            status.style.transform = 'none';
 
-        if delta < -100
+        if delta < -100 and !@state.fetching-data
             @set-state fetching-data: true
             data <~ get-mobscreen 1
             @state.fetching-data = false
@@ -155,6 +177,7 @@ export Mobscreen = React.create-class do
                             left: '50%'
                             margin-left: -20px
                             top: if !@props.data.tabs.1 or @state.fetching-data then 20px else -45
+                            transform: 'translate3d(0, 0, 0)'
                 for cell in @props.data.tabs.1
                     $div class-name: \aspect-2x1,
                         $div class-name: \with-aspect, for r in cell
