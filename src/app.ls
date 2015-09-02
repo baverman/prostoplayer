@@ -14,7 +14,7 @@ ThemeManager = new mui.Styles.ThemeManager()
 require './app.styl'
 {Mobscreen} = require './mobscreen.ls'
 
-window._CORS = true
+window._CORS = \cordova not of window
 
 
 Page = React.create-class do

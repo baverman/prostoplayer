@@ -1,3 +1,5 @@
 /node_modules
 /www/js/compiled
 npm-debug.log
+/platforms
+/plugins

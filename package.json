@@ -28,6 +28,7 @@
     "react-hot-loader": "^1.2.8"
   },
   "scripts": {
+    "build": "NODE_ENV=production webpack --profile",
     "watch": "webpack --progress --colors --watch",
     "hot-reload": "HOT_RELOAD=1 webpack-dev-server --port 3001 --hot --inline --progress --colors"
   },
