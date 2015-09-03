@@ -49,7 +49,7 @@ App = $$ React.create-class do
 
     add: (view, props) ->
         pages = @state.data.pages.concat [[view, props]]
-        window.location.hash = pages |> JSON.stringify |> encodeURI
+        pages-mutator pages
 
     make-page: (view, props, is-active) ->
         v = views[view]
@@ -104,6 +104,7 @@ app-data-mutator = ->
     console.log 'Data', it
     # console.trace!
     app-data := it
+    set-hash!
     localStorage['app-data'] = JSON.stringify app-data
     app.set-state data:it
 
@@ -122,18 +123,28 @@ get-current-pages = ->
     else [['mobscreen', null]]
 
 
+setting-hash = false
+window.addEventListener 'hashchange', ->
+    if !setting-hash
+        pages-mutator get-current-pages!
+
+
+set-hash = ->
+    setting-hash = true
+    location.hash = app-data.pages |> JSON.stringify |> encodeURI
+    setting-hash = false
+
+
 stored-data = localStorage['app-data']
 if stored-data
     stored-data = JSON.parse stored-data
     if stored-data.version == app-data.version
         app-data = stored-data
-        if location.hash != '#'
+        if location.hash
             app-data.pages = get-current-pages!
+        else
+            set-hash!
 else
     app-data.pages = get-current-pages!
 
 app = React.render (App data:app-data), document.get-element-by-id 'app-window'
-
-window.addEventListener 'hashchange', ->
-    # console.log 'Pages', get-current-pages()
-    pages-mutator get-current-pages!

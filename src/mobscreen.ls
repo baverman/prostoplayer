@@ -115,7 +115,7 @@ export Mobscreen = React.create-class do
         if React.findDOMNode(@refs.scroll).scrollTop <= 0
             status = React.findDOMNode @refs.status
             if status
-                scale = Math.min(1, delta / 200)
+                scale = Math.min(1, delta / 150)
                 status.style.transform = "scale(#scale)"
             else
                 @set-state pull: true, tend: true
@@ -126,7 +126,7 @@ export Mobscreen = React.create-class do
         if React.findDOMNode(@refs.scroll).scrollTop > 0
             return
 
-        if delta < -200 and !@state.fetching-data
+        if delta < -150 and !@state.fetching-data
             @set-state fetching-data: true, pull: false
             data <~ get-mobscreen 1
             @state.fetching-data = false
@@ -135,7 +135,7 @@ export Mobscreen = React.create-class do
             @set-state pull: false
 
     render: ->
-        console.log 'Render'
+        console.log 'Mobscreen'
         if not @props.data.tabs.1
             data <~ get-mobscreen 1
             @props.mutator @props.pkey, tabs: 1: data

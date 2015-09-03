@@ -1,7 +1,6 @@
 'use strict';
 var webpack = require('webpack')
 
-var isProd = process.env['NODE_ENV'] === 'production'
 var hotReload = process.env['HOT_RELOAD']
 
 var entries = ['./src/app.ls']
@@ -36,8 +35,3 @@ module.exports = {
         historyApiFallback: true
     }
 };
-
-if (isProd) {
-    module.exports.plugins.unshift(new webpack.optimize.UglifyJsPlugin({minimize: true}));
-    module.exports.devtool = '#source-map'
-}
