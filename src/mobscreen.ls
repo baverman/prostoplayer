@@ -1,17 +1,22 @@
-React = require 'react/addons'
-{unique, map} = require 'prelude-ls'
-{random, isEmpty} = require 'lodash'
+React              = require 'react/addons'
 {RefreshIndicator} = require 'material-ui'
-Swipeable = require 'react-swipeable'
+Swipeable          = require 'react-swipeable'
+is-empty           = require 'lodash/lang/isEmpty'
+random             = require 'lodash/number/random'
+unique             = require 'lodash/array/unique'
+map                = require 'lodash/collection/map'
 
-{fetch} = require './zvooq.ls'
 require './mobscreen.styl'
+{fetch}    = require './zvooq.ls'
+{parallel} = require './utils.ls'
 
 tabs = 1: \small_wtl
+csid = (map _, (.id)) >> (.join ',')
+
 
 fetch-item = (cell, lists) ->
     ilist = lists[cell.item]
-    if isEmpty ilist
+    if is-empty ilist
         return
 
     if cell.type == \random
@@ -28,7 +33,7 @@ get-mobscreen = (tab, cb) ->
                when \item of r and \custom_block not of r]
 
     ids = unique [r.item for r in items]
-    lists <- fetch '/api/layout_by_ids', ids: ids.join(\,)
+    lists <- fetch '/api/layout_by_ids', ids: ids.join(',')
     cells = []
     cell = []
     size = 0
@@ -44,22 +49,29 @@ get-mobscreen = (tab, cb) ->
 
     cells.push(cell) if not isEmpty cell
 
-    rids = [r.id for cell in cells
-                 for r in cell
-                 when r.item_type == \release]
+    creleases = [r for cell in cells
+                   for r in cell
+                   when r.item_type == \release]
 
-    pids = [r.id for cell in cells
-                 for r in cell
-                 when r.item_type == \playlist]
+    cplaylists = [r for cell in cells
+                    for r in cell
+                    when r.item_type == \playlist]
 
-    releases <- fetch '/api/tiny/releases', ids: rids.join(\,)
-    playlists <- fetch '/api/tiny/playlists', ids: pids.join(\,)
-    for cell in cells
-        for r in cell
-            if r.item_type == \release
-                r.object = releases.releases[r.id]
-            else if r.item_type == \playlist
-                r.object = playlists.playlists[r.id]
+    {releases, playlists} <- parallel do
+        releases: fetch do
+            '/api/tiny/releases'
+            ids: csid creleases
+            _
+        playlists: fetch do
+            '/api/tiny/playlists'
+            ids: csid cplaylists
+            _
+
+    for r in creleases
+        r.object = releases.releases[r.id]
+
+    for r in cplaylists
+        r.object = playlists.playlists[r.id]
 
     cb(cells)
 
@@ -70,6 +82,10 @@ gradient = 'linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7))'
 Release = React.create-class do
     context-types:
         app: React.PropTypes.object
+        meta: React.PropTypes.object
+
+    update-data: ->
+        it or releases: (@props.release.id): @props.release
 
     render: ->
         img_url = @props.release.image.src.replace('{size}', '300x300')
@@ -78,9 +94,9 @@ Release = React.create-class do
             style:
                 background-image: "#gradient, url('#img_url')"
                 background-size: \cover
-            onClick: ~> @context.app.add do
-                \release
-                id: @props.release.id,
+            on-click: !~>
+                @context.meta.releases[@props.release.id] = @props.release
+                @context.app.add \release, id: @props.release.id
             $div class-name: \bottom,
                 @props.release.title
                 $br!
@@ -104,7 +120,7 @@ Playlist = React.create-class do
                 @props.playlist.title
 
 
-export Mobscreen = React.create-class do
+module.exports = React.create-class do
     mixins: [React.addons.PureRenderMixin]
 
     get-initial-state: ->
@@ -112,13 +128,13 @@ export Mobscreen = React.create-class do
         pull: false
 
     pull-to-refresh: (e, delta) !->
-        if React.findDOMNode(@refs.scroll).scrollTop <= 0
+        if not @state.fetching-data and React.findDOMNode(@refs.scroll).scrollTop <= 0
             status = React.findDOMNode @refs.status
             if status
                 scale = Math.min(1, delta / 150)
                 status.style.transform = "scale(#scale)"
             else
-                @set-state pull: true, tend: true
+                @set-state pull: true
 
             return true
 
@@ -146,7 +162,7 @@ export Mobscreen = React.create-class do
             on-swiped-down: @pull-to-refresh-done
             $div class-name: 'mobscreen scrollable', ref: \scroll,
                 if @state.fetching-data or @state.pull or !@props.data.tabs.1
-                    $ RefreshIndicator, do
+                    $ RefreshIndicator,
                         ref: 'status'
                         size: 40
                         status: 'loading'
@@ -155,7 +171,7 @@ export Mobscreen = React.create-class do
                             margin-left: -20px
                             top: 20px
                             transform: if @state.pull then 'scale(0)' else 'scale(1.0)'
-                for cell in @props.data.tabs.1 or []
+                for cell in @props.data.tabs.1 or ['&nbsp;']
                     $div class-name: \aspect-2x1,
                         $div class-name: \with-aspect, for r in cell
                             if r.item_type == \release

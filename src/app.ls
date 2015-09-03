@@ -1,33 +1,39 @@
-React = require 'react/addons'
+React    = require 'react/addons'
+contains = require 'lodash/collection/contains'
+merge    = require 'lodash/object/merge'
+mui      = require 'material-ui'
+
+do require 'react-tap-event-plugin'
+
+require './app.styl'
+{children} = require './utils.ls'
+Meta       = require './meta.ls'
+Mobscreen  = require './mobscreen.ls'
+Release    = require './release.ls'
+{Player}   = require './player.ls'
+
 window.$ = React.create-element
 window.$$ = React.create-factory
 for key, value of React.DOM
     window."$#key" = value
 
-(require 'react-tap-event-plugin')!
-
-{split-at} = require 'prelude-ls'
-cn = require 'classnames'
-mui = require 'material-ui'
-ThemeManager = new mui.Styles.ThemeManager()
-
-require './app.styl'
-{Mobscreen} = require './mobscreen.ls'
-
-window._CORS = \cordova not of window
+theme-manager = new mui.Styles.ThemeManager!
+meta-store = new Meta!
 
 
 Page = React.create-class do
-    render: ->
-        class-name = cn do
-            'top-page': @props.active
-            'page': !@props.active
-        $div class-name: class-name, @props.children
+    mixins: [React.addons.PureRenderMixin]
 
-
-Release = React.create-class do
     render: ->
-        $div null, \Boo
+        class-name = if @props.active then 'top-page' else 'page'
+        $div class-name: class-name,
+            $ mui.AppBar, key: \menu, title: @props.title
+            $div class-name: 'page-content', key: \content,
+                $ @props.content, merge do
+                    pkey: @props.pkey
+                    data: @props.data
+                    mutator: views-mutator
+                    @props.props
 
 
 App = $$ React.create-class do
@@ -36,47 +42,46 @@ App = $$ React.create-class do
     child-context-types:
         mui-theme: React.PropTypes.object
         app: React.PropTypes.object
+        meta: React.PropTypes.object
 
     get-child-context: ->
-        self = @
-        do
-            mui-theme: ThemeManager.get-current-theme!
-            app: self
+        mui-theme: theme-manager.get-current-theme!
+        app: @
+        meta: meta-store
 
     get-initial-state: ->
         data: @props.data
 
-    add: (view, props) ->
-        pages = @state.data.pages.concat [[view, props]]
-        pages-mutator pages
+    add: (view, props, apply-view-data) !->
+        pages = @state.data.pages ++ [[view, props]]
+        app-data-mutator React.addons.update @state.data,
+            pages: $set: pages
+            # views: if apply-view-data then
+            #      (views[view].id props): $apply: apply-view-data
 
-    make-page: (view, props, is-active) ->
+    play: (tracks, idx) ->
+        @props.player.play tracks, idx
+
+    make-page: (page, is-active) ->
+        [view, props] = page
         v = views[view]
         key = v.id props
-        $ Page, key: key, active: is-active, $ v.component, do
+        title = v.title props
+        $ Page,
+            key: key
+            active: is-active
+            title: title
+            content: v.component
             pkey: key
-            mutator: views-mutator
             data: @state.data.views[key]
+            props: props
 
     render: ->
-        [hpages, apages] = split-at @state.data.pages.length - 1, @state.data.pages
-
-        pages = for [view, props] in hpages
-            @make-page view, props, false
-
-        apage = null
-        title = null
-        if apages.length
-            [view, props] = apages[0]
-            v = views[view]
-            title = v.title props
-            pages.push @make-page view, props, true
-
-        $div class-name: 'col-box',
-            $div class-name: 'col-box-fixed',
-                $ mui.AppBar, title: (title or \Zplayer)
-            $div class-name: 'col-box-stretch',
-                pages
+        [...ipages, apage] = @state.data.pages
+        $div class-name: \full, children do
+            for page in ipages
+                @make-page page, false
+            @make-page apage, true
 
 
 views = do
@@ -94,25 +99,26 @@ views = do
         title: -> \Playlist
 
 
+player = new Player !->
+    app-data-mutator React.addons.update app-data, player: $apply: it
+
+
 app-data = do
     version: 4
     views:
         mobscreen:
             tabs: {}
     pages: []
+    player: player.get-initial-data!
 
 
-app-data-mutator = ->
+app-data-mutator = (it, update-hash=true)->
     console.log 'Data', it
     # console.trace!
     app-data := it
-    set-hash!
+    hash.set! if update-hash
     localStorage['app-data'] = JSON.stringify app-data
     app.set-state data:it
-
-
-pages-mutator = ->
-    app-data-mutator React.addons.update app-data, pages: $set: it
 
 
 views-mutator = (key, value) ->
@@ -124,34 +130,47 @@ get-current-pages = ->
             then location.hash |> (.slice 1) |> decodeURI |> JSON.parse
             else []
 
-    if !pages or !pages.length
+    if not pages?.length
     then [['mobscreen', null]]
     else pages
 
 
-setting-hash = false
-window.addEventListener 'hashchange', ->
-    if !setting-hash
-        pages-mutator get-current-pages!
+hash =
+    set: !->
+        @.off!
+        location.hash = app-data.pages |> JSON.stringify |> encodeURI
+        @.on!
+
+    handle: !->
+        app-data-mutator do
+            React.addons.update do
+                app-data
+                pages: $set: get-current-pages!
+            false
+        it.prevent-default!
+        it.stop-propagation!
+
+    on: !->
+       window.addEventListener 'hashchange' @handle
+
+    off: !->
+       window.removeEventListener 'hashchange' @handle
 
 
-set-hash = ->
-    setting-hash = true
-    location.hash = app-data.pages |> JSON.stringify |> encodeURI
-    setting-hash = false
+if not location.search `contains` 'force=1'
+    stored-data = localStorage['app-data']
+    if stored-data
+        stored-data = JSON.parse stored-data
+        if stored-data.version == app-data.version
+            app-data = stored-data
+            if location.hash
+                app-data.pages = get-current-pages!
 
-
-stored-data = localStorage['app-data']
-if stored-data
-    stored-data = JSON.parse stored-data
-    if stored-data.version == app-data.version
-        app-data = stored-data
-        if location.hash
-            app-data.pages = get-current-pages!
-
-if !app-data.pages or !app-data.pages.length
+if not app-data?.pages?.length
     app-data.pages = get-current-pages!
 
-set-hash!
+hash.set!
 
-app = React.render (App data:app-data), document.get-element-by-id 'app-window'
+app = React.render do
+    App data: app-data, player: player
+    document.get-element-by-id 'app-window'
