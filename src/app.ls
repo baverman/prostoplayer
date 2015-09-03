@@ -20,7 +20,6 @@ window._CORS = \cordova not of window
 Page = React.create-class do
     render: ->
         class-name = cn do
-            'with-app-bar': true
             'top-page': @props.active
             'page': !@props.active
         $div class-name: class-name, @props.children
@@ -73,8 +72,11 @@ App = $$ React.create-class do
             title = v.title props
             pages.push @make-page view, props, true
 
-        pages.unshift $ mui.AppBar, title: (title or \Zplayer)
-        $div class-name: 'page-container', pages
+        $div class-name: 'col-box',
+            $div class-name: 'col-box-fixed',
+                $ mui.AppBar, title: (title or \Zplayer)
+            $div class-name: 'col-box-stretch',
+                pages
 
 
 views = do
@@ -93,7 +95,7 @@ views = do
 
 
 app-data = do
-    version: 1
+    version: 4
     views:
         mobscreen:
             tabs: {}
@@ -118,9 +120,13 @@ views-mutator = (key, value) ->
 
 
 get-current-pages = ->
-    if location.hash
-    then location.hash |> (.slice 1) |> decodeURI |> JSON.parse
-    else [['mobscreen', null]]
+    pages = if location.hash
+            then location.hash |> (.slice 1) |> decodeURI |> JSON.parse
+            else []
+
+    if !pages or !pages.length
+    then [['mobscreen', null]]
+    else pages
 
 
 setting-hash = false
@@ -142,9 +148,10 @@ if stored-data
         app-data = stored-data
         if location.hash
             app-data.pages = get-current-pages!
-        else
-            set-hash!
-else
+
+if !app-data.pages or !app-data.pages.length
     app-data.pages = get-current-pages!
+
+set-hash!
 
 app = React.render (App data:app-data), document.get-element-by-id 'app-window'

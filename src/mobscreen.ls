@@ -155,7 +155,7 @@ export Mobscreen = React.create-class do
                             margin-left: -20px
                             top: 20px
                             transform: if @state.pull then 'scale(0)' else 'scale(1.0)'
-                for cell in @props.data.tabs.1
+                for cell in @props.data.tabs.1 or []
                     $div class-name: \aspect-2x1,
                         $div class-name: \with-aspect, for r in cell
                             if r.item_type == \release
