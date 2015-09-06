@@ -7,6 +7,7 @@ app.use('/www', express.static('www'));
 
 app.use('/api', function(req, res) {  
   var url = 'http://zvooq.ru/api' + req.url;
+  console.log(url);
   req.pipe(request(url)).pipe(res);
 });
 

@@ -1,0 +1,28 @@
+@import settings
+
+.player-widget
+    position absolute
+    height player-widget-height
+    width 100%
+    top 'calc(100% - %s)' % player-widget-height
+
+    .inner
+        height player-widget-height
+        width 100%
+        display flex
+        align-items center
+
+        .cover
+            flex 0 0 auto
+            height 42px
+            width 42px
+            margin 3px
+
+        .content
+            overflow hidden
+            flex 1 1 auto
+            margin-left 3px
+            font-size: 14px
+
+        .button
+            flex 0 0 auto

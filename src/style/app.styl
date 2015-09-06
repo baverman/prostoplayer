@@ -1,3 +1,5 @@
+@import settings
+
 #app-window
     position absolute
     top 0px
@@ -34,6 +36,10 @@
     background-color white
 
 
+.page-with-player
+    height 'calc(100% - %s)' % player-widget-height
+
+
 .page
     transform translate3d(0, 0, 10px)
     // z-index: -10
@@ -45,7 +51,7 @@
 
 .page-content
     width 100%
-    height calc(100% - 64px)
+    height 'calc(100% - %s)' % app-bar-height
 
 
 .aspect-2x1
@@ -66,3 +72,19 @@
     left 0
     right 0
     bottom 0
+
+
+.app-bar
+    > div
+        min-height app-bar-height !important
+
+    h1
+        line-height app-bar-height !important
+        font-size 20px !important
+
+    button
+        width 32px !important
+        height 32px !important
+        padding-top 4px !important
+        padding-right 24px !important
+        padding-left 4px !important

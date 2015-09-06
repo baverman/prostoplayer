@@ -1,12 +1,12 @@
-React              = require 'react/addons'
-{RefreshIndicator} = require 'material-ui'
-Swipeable          = require 'react-swipeable'
-is-empty           = require 'lodash/lang/isEmpty'
-random             = require 'lodash/number/random'
-unique             = require 'lodash/array/unique'
-map                = require 'lodash/collection/map'
+React            = require 'react/addons'
+RefreshIndicator = require 'material-ui/lib/refresh-indicator'
+Swipeable        = require 'react-swipeable'
+is-empty         = require 'lodash/lang/isEmpty'
+random           = require 'lodash/number/random'
+unique           = require 'lodash/array/unique'
+map              = require 'lodash/collection/map'
 
-require './mobscreen.styl'
+require './style/mobscreen.styl'
 {fetch}    = require './zvooq.ls'
 {parallel} = require './utils.ls'
 
@@ -143,7 +143,8 @@ module.exports = React.create-class do
             return
 
         if delta < -150 and !@state.fetching-data
-            @set-state fetching-data: true, pull: false
+            @state.fetching-data = true
+            @state.pull = false
             data <~ get-mobscreen 1
             @state.fetching-data = false
             @props.mutator @props.pkey, tabs: 1: data
@@ -163,6 +164,7 @@ module.exports = React.create-class do
             $div class-name: 'mobscreen scrollable', ref: \scroll,
                 if @state.fetching-data or @state.pull or !@props.data.tabs.1
                     $ RefreshIndicator,
+                        class-name: 'boo'
                         ref: 'status'
                         size: 40
                         status: 'loading'

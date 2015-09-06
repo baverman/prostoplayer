@@ -1,16 +1,23 @@
 React    = require 'react/addons'
 contains = require 'lodash/collection/contains'
 merge    = require 'lodash/object/merge'
-mui      = require 'material-ui'
+cn       = require 'classnames'
+mui =
+    Styles: require 'material-ui/lib/styles'
+    AppBar: require 'material-ui/lib/app-bar'
+    IconButton: require 'material-ui/lib/icon-button'
+    Icons:
+        Menu: require 'material-ui/lib/svg-icons/navigation/menu'
+        Left: require 'material-ui/lib/svg-icons/navigation/chevron-left'
 
 do require 'react-tap-event-plugin'
 
-require './app.styl'
+require './style/app.styl'
 {children} = require './utils.ls'
 Meta       = require './meta.ls'
 Mobscreen  = require './mobscreen.ls'
 Release    = require './release.ls'
-{Player}   = require './player.ls'
+{Player, PlayerWidget}   = require './player.ls'
 
 window.$ = React.create-element
 window.$$ = React.create-factory
@@ -24,10 +31,28 @@ meta-store = new Meta!
 Page = React.create-class do
     mixins: [React.addons.PureRenderMixin]
 
+    context-types:
+        app: React.PropTypes.object
+
+    nav-button: ->
+        if @props.first
+        then $ mui.IconButton, null, $ mui.Icons.Menu
+        else $ mui.IconButton,
+            on-click: @context.app.back
+            $ mui.Icons.Left
+
     render: ->
-        class-name = if @props.active then 'top-page' else 'page'
-        $div class-name: class-name,
-            $ mui.AppBar, key: \menu, title: @props.title
+        class-name = cn do
+            'page-with-player': @props.player.current
+            'top-page': @props.active
+            'page': not @props.active
+
+        $div class-name: class-name, children do
+            $div class-name: 'app-bar', key: \menu,
+                $ mui.AppBar,
+                    title: @props.title
+                    icon-element-left: @nav-button!
+
             $div class-name: 'page-content', key: \content,
                 $ @props.content, merge do
                     pkey: @props.pkey
@@ -59,29 +84,42 @@ App = $$ React.create-class do
             # views: if apply-view-data then
             #      (views[view].id props): $apply: apply-view-data
 
+    back: !->
+        pages = @state.data.pages[0 til -1]
+        app-data-mutator React.addons.update @state.data,
+            pages: $set: pages
+
     play: (tracks, idx) ->
         @props.player.play tracks, idx
 
-    make-page: (page, is-active) ->
+    play-pause: ->
+        @props.player.play-pause!
+
+    make-page: (page, active, first) ->
         [view, props] = page
         v = views[view]
         key = v.id props
         title = v.title props
         $ Page,
             key: key
-            active: is-active
+            first: first
+            active: active
             title: title
             content: v.component
             pkey: key
             data: @state.data.views[key]
             props: props
+            player: @state.data.player
 
     render: ->
         [...ipages, apage] = @state.data.pages
+        cnt = 0
         $div class-name: \full, children do
             for page in ipages
-                @make-page page, false
-            @make-page apage, true
+                @make-page page, false, not cnt++
+            @make-page apage, true, not cnt
+            if @state.data.player
+                $ PlayerWidget, key: \player-widget, data: @state.data.player
 
 
 views = do
@@ -163,6 +201,7 @@ if not location.search `contains` 'force=1'
         stored-data = JSON.parse stored-data
         if stored-data.version == app-data.version
             app-data = stored-data
+            app-data.player.state = \stop
             if location.hash
                 app-data.pages = get-current-pages!
 
@@ -174,3 +213,5 @@ hash.set!
 app = React.render do
     App data: app-data, player: player
     document.get-element-by-id 'app-window'
+
+document.addEventListener 'backbutton', app.back, false

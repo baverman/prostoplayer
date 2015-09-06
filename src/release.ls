@@ -1,6 +1,6 @@
 React = require 'react/addons'
 
-require './release.styl'
+require './style/release.styl'
 TrackList  = require './track-list.ls'
 {children} = require './utils.ls'
 

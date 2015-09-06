@@ -1,6 +1,6 @@
 React = require 'react/addons'
 
-require './track-list.styl'
+require './style/track-list.styl'
 {format-seconds} = require './utils.ls'
 
 
@@ -38,6 +38,6 @@ module.exports = React.create-class do
                         $span class-name: \duration, format-seconds track.duration
                 else
                     $div class-name: \track-list-item,
-                        $span class-name: \pos, "#{++pos}."
+                        $span class-name: \pos, "#{pos}."
                         $span class-name: \title, tid
                         $span class-name: \duration, '0:00'
