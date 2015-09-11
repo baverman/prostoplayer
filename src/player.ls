@@ -71,6 +71,7 @@ export PlayerWidget = React.create-class do
         loaded: false
 
     render: ->
+        @state.loaded = false
         @context.meta.ensure tracks: @props.data.queue, ~>
             if it
                 @state.loaded = true
